@@ -1,0 +1,16 @@
+@"
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.env
+.ipynb_checkpoints/
+"@ | Set-Content .gitignore
+@"
+
+# PHM 2008 dataset (download separately)
+data/raw/
+
+# Large trained model
+
+"@ | Add-Content .gitignore

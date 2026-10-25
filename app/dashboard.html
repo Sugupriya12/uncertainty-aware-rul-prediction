@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jet Engine RUL Predictor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 850px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f4f6f9;
+            color: #202938;
+        }
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 12px #00000010;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            box-sizing: border-box;
+            font-family: monospace;
+            padding: 12px;
+        }
+        button {
+            margin-top: 12px;
+            padding: 12px 20px;
+            background: #175cd3;
+            color: white;
+            border: 0;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .result { font-size: 18px; line-height: 1.8; }
+        .error { color: #c62828; }
+    </style>
+</head>
+<body>
+    <h1>Jet Engine RUL Predictor</h1>
+    <p>Estimate remaining useful life using engine sensor readings.</p>
+
+    <div class="card">
+        <h2>Sensor Input</h2>
+        <p>Enter all 24 features as valid JSON.</p>
+
+        <textarea id="sensorInput">{
+  "setting_1": 0.0023,
+  "setting_2": 0.0002,
+  "setting_3": 100.0,
+  "sensor_1": 518.67,
+  "sensor_2": 642.0,
+  "sensor_3": 1580.0,
+  "sensor_4": 1400.0,
+  "sensor_5": 14.62,
+  "sensor_6": 21.61,
+  "sensor_7": 554.36,
+  "sensor_8": 2388.0,
+  "sensor_9": 9046.0,
+  "sensor_10": 1.3,
+  "sensor_11": 47.47,
+  "sensor_12": 521.66,
+  "sensor_13": 2388.0,
+  "sensor_14": 8138.62,
+  "sensor_15": 8.42,
+  "sensor_16": 0.03,
+  "sensor_17": 392.0,
+  "sensor_18": 2388.0,
+  "sensor_19": 100.0,
+  "sensor_20": 39.0,
+  "sensor_21": 23.4
+}</textarea>
+
+        <button onclick="predictRUL()">Predict RUL</button>
+    </div>
+
+    <div class="card">
+        <h2>Prediction Results</h2>
+        <div id="results" class="result">
+            Submit sensor data to see the prediction.
+        </div>
+    </div>
+
+    <script>
+        async function predictRUL() {
+            const results = document.getElementById("results");
+            results.className = "result";
+            results.textContent = "Calculating prediction...";
+
+            try {
+                const sensorData = JSON.parse(
+                    document.getElementById("sensorInput").value
+                );
+
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(sensorData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        typeof data.detail === "string"
+                            ? data.detail
+                            : JSON.stringify(data.detail)
+                    );
+                }
+
+                results.innerHTML = `
+                    <strong>Predicted RUL:</strong>
+                    ${data.predicted_rul_cycles} cycles<br>
+                    <strong>Lower estimate:</strong>
+                    ${data.uncertainty_interval_cycles.lower} cycles<br>
+                    <strong>Upper estimate:</strong>
+                    ${data.uncertainty_interval_cycles.upper} cycles<br>
+                    <strong>Target interval coverage:</strong>
+                    ${data.interval_target_coverage * 100}%<br>
+                    <p>${data.note}</p>
+                `;
+            } catch (error) {
+                results.className = "result error";
+                results.textContent = "Prediction failed: " + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
